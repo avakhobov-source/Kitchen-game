@@ -46,6 +46,31 @@ function open(){if(!el)build();el.style.display='flex';paint();load(paint);}
 function close(){if(el)el.style.display='none';}
 return {open:open,submit:submit};
 })();
+var REF=(function(){
+var URL_='https://goxmwpjepbfeyxchdtce.supabase.co/rest/v1/scores',KEY='sb_publishable_MoDF_SQuqqlB59Txr3imug_eWsMhnfP';
+function T(){try{return window.Telegram&&window.Telegram.WebApp;}catch(e){return null;}}
+function id(){try{var u=T().initDataUnsafe.user;if(u&&u.id)return String(u.id);}catch(e){}return '';}
+function nm(){try{var u=T().initDataUnsafe.user;if(u&&u.first_name)return u.first_name.slice(0,12);}catch(e){}return 'Игрок';}
+function hd(x){var h={apikey:KEY,'Content-Type':'application/json'};if(x)for(var k in x)h[k]=x[k];return h;}
+function startParam(){try{return T().initDataUnsafe.start_param||'';}catch(e){return '';}}
+function fromParam(sp){return /^r\d+$/.test(sp||'')?sp.slice(1):'';}
+function link(base){var me=id();return (me&&base)?base+'?startapp=r'+me:base;}
+function register(inv){
+  try{if(!inv||!id()||inv===id())return;if(localStorage.getItem('ref_done'))return;}catch(e){return;}
+  fetch(URL_+'?on_conflict=game,user_id',{method:'POST',headers:hd({Prefer:'resolution=merge-duplicates,return=minimal'}),body:JSON.stringify({game:'ref:'+inv,user_id:id(),name:nm(),score:1})}).then(function(r){if(r.ok){try{localStorage.setItem('ref_done','1');}catch(e){}}}).catch(function(){});
+}
+function claim(key,cb){
+  var me=id();if(!me)return;
+  fetch(URL_+'?game=eq.ref:'+me+'&select=user_id',{headers:hd()}).then(function(r){if(!r.ok)throw 0;return r.json();}).then(function(a){
+    var n=a.length,k='ref_claimed_'+key,d=0;try{d=+localStorage.getItem(k)||0;}catch(e){}
+    if(n>d){try{localStorage.setItem(k,String(n));}catch(e){}cb(n-d);}
+  }).catch(function(){});
+}
+return {id:id,link:link,register:register,claim:claim,fromParam:fromParam,startParam:startParam};
+})();
+setTimeout(function(){try{REF.register(REF.fromParam(REF.startParam()));REF.claim('kitchen',function(n){S.coins+=15*n;save();toast('Друг пришёл! +'+15*n+' 🪙');});
+var d0=function(d){return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();},nw=new Date(),t0=d0(nw),y0=d0(new Date(nw.getTime()-864e5));
+if(S.lastDay!==t0){S.streak=(S.lastDay===y0?(S.streak||0)+1:1);S.lastDay=t0;var b=Math.min(S.streak,7)*3;S.coins+=b;save();toast('День '+S.streak+' подряд! +'+b+' 🪙');}}catch(e){console.log("REFERR "+e)}},700);
 var cv=document.getElementById('c'),ctx=cv.getContext('2d'),W,H,D;
 function resize(){D=window.devicePixelRatio||1;W=innerWidth;H=innerHeight;cv.width=W*D;cv.height=H*D;ctx.setTransform(D,0,0,D,0,0);}
 addEventListener('resize',resize);resize();
@@ -262,7 +287,7 @@ function afterFail(){
   else nextOrder();
 }
 function nextDay(){cafe.day++;cafe.goal=3+cafe.day;cafe.served=0;if(cafe.hearts<3)cafe.hearts++;nextOrder();}
-function share(){var url=SHARE_URL||(location.origin+location.pathname),text='Я готовлю вкусности в игре «Вкусная кухня»! 🍜🍣🥟';var link='https://t.me/share/url?url='+encodeURIComponent(url)+'&text='+encodeURIComponent(text);
+function share(){var url=REF.link(SHARE_URL)||(location.origin+location.pathname),text='Я готовлю вкусности в игре «Вкусная кухня»! 🍜🍣🥟';var link='https://t.me/share/url?url='+encodeURIComponent(url)+'&text='+encodeURIComponent(text);
   try{if(tg&&tg.openTelegramLink){tg.openTelegramLink(link);return;}}catch(e){}
   if(navigator.share){navigator.share({title:'Вкусная кухня',text:text,url:url}).catch(function(e){if(!e||e.name!=='AbortError')copyLink(url,text);});return;}
   copyLink(url,text);}
@@ -294,7 +319,7 @@ function drawMenu(){
     var s2=S.stars[d.id]||0;ctx.font=(ch<80?14:17)+'px system-ui';ctx.fillStyle='#f0a000';ctx.fillText('★'.repeat(s2)+'☆'.repeat(3-s2),x+cw*.5,y+ch*.74);})(j);}
   ctx.restore();
   if(maxS>0){var th=Math.max(30,vh*vh/total),ty=top+(vh-th)*(menuScroll/maxS);ctx.fillStyle='rgba(194,68,122,.35)';rr(W-7,ty,4,th,2);ctx.fill();}
-  btn(16,H-56,W-32-108,44,'👥 Позвать друга',share,false,16);
+  btn(16,H-56,W-32-108,44,'👥 Позвать друга (+15 🪙)',share,false,16);
   btns.push({x:W-108,y:H-56,w:44,h:44,fn:LB.open});ctx.fillStyle='rgba(255,255,255,.8)';rr(W-108,H-56,44,44,12);ctx.fill();emo('🏆',W-86,H-33,22);
   muteBtn(W-60,H-56);
 }
@@ -401,7 +426,7 @@ function drawEat(done){
     ctx.font='30px system-ui';ctx.fillStyle='#f0a000';ctx.fillText('★'.repeat(stars)+'☆'.repeat(3-stars),W/2,py+62);
     ctx.font='bold 14px system-ui';ctx.fillStyle='#a05575';ctx.fillText('+'+gain+' 🪙'+(newStar?'  ·  новый рекорд блюда!':''),W/2,py+80);
     if(performance.now()-eatAt>500){var bw=Math.min(300,W-48),bx=(W-bw)/2,by=H-190;
-      btn(bx,by,bw,50,'🍽 Другое блюдо',function(){state='menu';},true);btn(bx,by+58,bw,46,'🔁 Приготовить ещё раз',function(){startDish(dish);},false,16);btn(bx,by+112,bw,40,'👥 Позвать друга',share,false,15);}
+      btn(bx,by,bw,50,'🍽 Другое блюдо',function(){state='menu';},true);btn(bx,by+58,bw,46,'🔁 Приготовить ещё раз',function(){startDish(dish);},false,16);btn(bx,by+112,bw,40,'👥 Позвать друга (+15 🪙)',share,false,15);}
   }
   if(state==='eat'){btns.push({x:0,y:H*.5,w:W,h:H*.5,fn:bite});}
 }
@@ -424,7 +449,7 @@ function draw(){
   else if(state==='cook'||state==='cookdone'){drawCook();if(state==='cookdone'){ctx.textAlign='center';ctx.font='bold 34px system-ui';ctx.fillStyle='#e0457b';ctx.strokeStyle='#fff';ctx.lineWidth=6;ctx.strokeText('Готово! 🎉',W/2,satop()+(H-satop())*.17);ctx.fillText('Готово! 🎉',W/2,satop()+(H-satop())*.17);}}
   else if(state==='serve')drawServe();
   else if(state==='fail')drawFail();
-  else if(state==='dayend')panel('День '+cafe.day+' пройден! 🎉',['Клиентов за игру: '+cafe.total,'Бонус за день: +'+cafe.bonus+' 🪙','Завтра будет труднее!'],[['▶ Следующий день',nextDay],['🏠 В меню',menuBack],['👥 Позвать друга',share]]);
+  else if(state==='dayend')panel('День '+cafe.day+' пройден! 🎉',['Клиентов за игру: '+cafe.total,'Бонус за день: +'+cafe.bonus+' 🪙','Завтра будет труднее!'],[['▶ Следующий день',nextDay],['🏠 В меню',menuBack],['👥 Позвать друга (+15 🪙)',share]]);
   else if(state==='cafeover')panel('Кафе закрыто 😢',['Клиентов обслужено: '+cafe.total,'Дней пройдено: '+(cafe.day-1),'Рекорд: '+S.cafeBest],[['🔁 Ещё раз',startCafe],['🏆 Рейтинг',LB.open],['🏠 В меню',menuBack]]);
   else drawEat(state==='eatdone');
   for(var i=0;i<parts.length;i++){var p=parts[i];emo(p.e,p.x,p.y,22,Math.min(1,p.l*2));}
